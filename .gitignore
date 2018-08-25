@@ -1,0 +1,7 @@
+aws-iot-device-sdk-python/*   
+DiscoAlarm.cert.pem     
+DiscoAlarm.public.key  
+start.sh
+connect_device_package.zip  
+DiscoAlarm.private.key  
+root-CA.crt
