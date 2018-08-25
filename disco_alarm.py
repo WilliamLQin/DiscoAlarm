@@ -1,8 +1,11 @@
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import pigpio
 import time
+from safe_schedule import SafeScheduler
+from schedule import CancelJob
 
 pi = pigpio.pi()
+scheduler = SafeScheduler()
 
 endpoint = "a13a0acc0pv8gr.iot.us-east-1.amazonaws.com"
 rootCAPath = "root-CA.crt"
@@ -16,18 +19,11 @@ myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificateP
 myAWSIoTMQTTClient.connect()
 
 def light_led(switch, gpio):
-        try:
-                pi.write(gpio, switch)
-        except:
-                print "rip"
+        pi.write(gpio, switch)
 
-def reset_leds():
-        for x in range(23, 35):
-                light_led(0, x)
-
-def activate_leds():
-        for x in range(23, 35):
-                light_led(1, x)
+def led_job(switch, gpio):
+	light_led(switch, gpio)
+	return CancelJob
 
 def callback(client, userdata, message):
         print "Information received:"
@@ -39,22 +35,16 @@ def callback(client, userdata, message):
         params = payload.split()
 
         if message.topic == "led":
-                if params[0] == "on":
-                        activate_leds()
-                elif params[0] == "off":
-                        reset_leds()
-                elif params[1] == "on":
-                        if (len(params) > 2):
-                                time.sleep(int(params[2]))      
-                        light_led(1, int(params[0]))
-                else:   
-                        if (len(params) > 2):
-                                time.sleep(int(params[2]))
-                        light_led(0, int(params[0]))
+                if params[1] == "on":
+                        scheduler.every(1).seconds.do(led_job, 1, int(params[0]))
+                elif params[1] == "off":   
+                        scheduler.every(1).seconds.do(led_job, 0, int(params[0]))
 
 myAWSIoTMQTTClient.subscribe("led", 0, callback)
 
 print "ready"
 
-end = input()
+while True:
+	scheduler.run_pending()
+	time.sleep(1)
 
