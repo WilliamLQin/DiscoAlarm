@@ -65,3 +65,10 @@ def dim(length):
 	for command in reversed(queue):
 		call_queue.append(command)	
 
+def solid():
+	global call_queue
+	
+	clear()
+
+	
+	call_queue.append([255, 50])

@@ -3,6 +3,7 @@ import time
 from safe_schedule import SafeScheduler
 from schedule import CancelJob
 import threading
+from traceback import format_exc
 
 import disco_leds_test as disco_leds
 
@@ -21,13 +22,34 @@ myAWSIoTMQTTClient.configureEndpoint(endpoint, 8883)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
 myAWSIoTMQTTClient.connect()
 
-def leds_brighten(length):
+# Pre-Effects
+def brighten(repeat, length):
 	disco_leds.brighten(length)
-	return CancelJob
+	if not repeat:
+		return CancelJob
 
-def leds_dim(length):
+def dim(repeat, length):
 	disco_leds.dim(length)
-	return CancelJob
+	if not repeat:
+		return CancelJob
+
+# Post-Effects
+def solid(repeat):
+	disco_leds.solid()
+	if not repeat:
+		return CancelJob
+
+def getFunc(name):
+	func = None
+	
+	if name == "brighten":
+		func = brighten
+	elif name == "dim":
+		func = dim
+	elif name == "solid":
+		func = solid
+	
+	return func 
 
 def callback(client, userdata, message):
 	global end
@@ -40,17 +62,66 @@ def callback(client, userdata, message):
         payload = message.payload
         params = payload.split()
 
-	print time.time()
-
 	if params[0] == "end":
 		end = True
+		return
 
-        if len(params) == 2:
-                if params[0] == "brighten":
-                        scheduler.every(1).seconds.do(leds_brighten, float(params[1]))
-                elif params[0] == "dim":   
-                        scheduler.every(1).seconds.do(leds_dim, float(params[1]))
+	if len(params) < 7:
+		return
+	
+	try:
 
+		pre_effect = params[0]
+		pre_effect_duration = int(params[1])
+		post_effect = params[2]
+		name = params[3]
+		repeat = params[4]
+		post_effect_start = params[5]
+		days = []
+		for x in params[6:]:
+			days.append(x)
+
+		time = map(int, post_effect_start.split(":"))
+		time[1] -= int(pre_effect_duration/60)
+		if time[1] < 0:
+			time[0] -= 1
+			if time[0] < 0:
+				time[0] = 23
+			time[1] += 60
+		
+		pre_effect_start = str(time[0]) + ":" + str(time[1])
+
+	except Exception:
+		print format_exc()
+		return
+
+	func_pre = getFunc(pre_effect)
+	func_post = getFunc(post_effect)
+	
+	rep = True if repeat == "yes" else False
+
+	if "sunday" in days:
+		scheduler.every().sunday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().sunday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if "monday" in days:
+		scheduler.every().monday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().monday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if "tuesday" in days:
+		scheduler.every().tuesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().tuesday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if "wednesday" in days:
+		scheduler.every().wednesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().wednesday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if "thursday" in days:
+		scheduler.every().thursday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().thursday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if "friday" in days:
+		scheduler.every().friday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().friday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if "saturday" in days:
+		scheduler.every().saturday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
+		scheduler.every().saturday.at(post_effect_start).do(func_post, rep).tag(name)		
+			
 myAWSIoTMQTTClient.subscribe("disco_alarm", 0, callback)
 
 print "ready"

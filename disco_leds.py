@@ -34,7 +34,7 @@ def clock(ms):
 			continue
 		strip.setPixelColor(next[0], next[1])
 		strip.show()
-		internal_clock = next[2] - 2*internal_clock - ms
+		internal_clock = next[2] - internal_clock - 1 - ms
 		queue_position += 1
 
 def off():
