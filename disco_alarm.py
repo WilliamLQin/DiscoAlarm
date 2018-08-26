@@ -12,9 +12,9 @@ scheduler = SafeScheduler()
 end = False
 
 endpoint = "a13a0acc0pv8gr.iot.us-east-1.amazonaws.com"
-rootCAPath = "root-CA.crt"
-privateKeyPath = "DiscoAlarm.private.key"
-certificatePath = "DiscoAlarm.cert.pem"
+rootCAPath = "/home/pi/DiscoAlarm/root-CA.crt"
+privateKeyPath = "/home/pi/DiscoAlarm/DiscoAlarm.private.key"
+certificatePath = "/home/pi/DiscoAlarm/DiscoAlarm.cert.pem"
 clientID = "23"
 
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientID)
@@ -69,12 +69,16 @@ def callback(client, userdata, message):
 			end = True
 			return
 
+		if params[0] == "off":
+			disco_leds.off()
+			return
+
 		if params[0] == "cancel":
 			scheduler.clear(params[1])
 			return	
 
 		pre_effect = params[0]
-		pre_effect_duration = int(params[1])
+		pre_effect_duration = int(params[1]) * 60
 		post_effect = params[2]
 		name = params[3]
 		repeat = params[4]
@@ -102,29 +106,30 @@ def callback(client, userdata, message):
 	
 	rep = True if repeat == "yes" else False
 
-	if "sunday" in days:
+	if "sunday" or "sundays" or "weekend" or "weekends" in days:
 		scheduler.every().sunday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().sunday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "monday" in days:
+	if "monday" or "mondays" or  "weekday" or "weekdays" in days:
 		scheduler.every().monday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().monday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "tuesday" in days:
+	if "tuesday" or "tuesdays" or "weekday" or "weekdays" in days:
 		scheduler.every().tuesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().tuesday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "wednesday" in days:
+	if "wednesday" or "wednesdays" or "weekday" or "weekdays" in days:
 		scheduler.every().wednesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().wednesday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "thursday" in days:
+	if "thursday" or "thursdays" or "weekday" or "weekdays" in days:
 		scheduler.every().thursday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().thursday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "friday" in days:
+	if "friday" or "fridays" or "weekday" or "weekdays" in days:
 		scheduler.every().friday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().friday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "saturday" in days:
+	if "saturday" or "saturdays" or "weekend" or "weekends" in days:
 		scheduler.every().saturday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
 		scheduler.every().saturday.at(post_effect_start).do(func_post, rep).tag(name)		
 			
 myAWSIoTMQTTClient.subscribe("disco_alarm", 0, callback)
+myAWSIoTMQTTClient.publish("connected", True, 0)
 
 print "ready"
 
@@ -149,3 +154,7 @@ def clock_leds():
 
 threading.Thread(target=clock_scheduler).start()
 threading.Thread(target=clock_leds).start()
+
+disco_leds.off()
+
+#brighten(True, 60)

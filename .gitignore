@@ -1,4 +1,3 @@
-aws-iot-device-sdk-python/*   
 DiscoAlarm.cert.pem     
 DiscoAlarm.public.key  
 start.sh
