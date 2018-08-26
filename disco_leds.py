@@ -96,11 +96,53 @@ def solid():
 	clear()
 	fill(Color(255, 255, 200))
 
-def colorWipe(color, wait_ms=50):
+def colorWipeForward(wait_ms=40):
 	global strip
 	global call_queue
 
-	for i in range(strip.numPixels()):
-		call_queue.append([i, color, wait_ms])
+	clear()
 
+	for i in range(strip.numPixels()):
+		call_queue.append([i, Color(50, 50, 255), wait_ms])
+
+	for i in range(strip.numPixels()):
+		call_queue.append([i, Color(255, 255, 255), wait_ms])
+
+	call_queue.append(["goto", 0])
+
+def colorWipeBackward(wait_ms=40):
+	global strip
+	global call_queue
+
+	clear()
+
+	for i in range(strip.numPixels()-1,-1,-1):
+		call_queue.append([i, Color(50, 50, 255), wait_ms])
+
+	for i in range(strip.numPixels()-1,-1,-1):
+		call_queue.append([i, Color(255, 255, 255), wait_ms])
+
+	call_queue.append(["goto", 0])
+
+
+
+def pingPong(wait_ms=40):
+	global strip
+	global call_queue
+
+	clear()
+
+	for i in range(strip.numPixels()):
+		call_queue.append([i, Color(50, 50, 255), wait_ms])
+
+	for i in range(strip.numPixels()):
+		call_queue.append([i, Color(255, 255, 255), wait_ms])
+
+	for i in range(strip.numPixels()-1,-1,-1):
+		call_queue.append([i, Color(50, 50, 255), wait_ms])
+
+	for i in range(strip.numPixels()-1,-1,-1):
+		call_queue.append([i, Color(255, 255, 255), wait_ms])
+
+	call_queue.append(["goto", 0])
 

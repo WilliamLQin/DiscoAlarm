@@ -39,6 +39,22 @@ def solid(repeat):
 	if not repeat:
 		return CancelJob
 
+def colorWipeForward(repeat):
+	disco_leds.colorWipeForward()
+	if not repeat:
+		return CancelJob
+
+def colorWipeBackward(repeat):
+	disco_leds.colorWipeBackward()
+	if not repeat:
+		return CancelJob
+
+def pingPong(repeat):
+	disco_leds.pingPong()
+	if not repeat:
+		return CancelJob
+
+
 # ----
 def getFunc(name):
 	func = None
@@ -49,6 +65,12 @@ def getFunc(name):
 		func = dim
 	elif name == "solid":
 		func = solid
+	elif name == "forward":
+		func = colorWipeForward
+	elif name == "backward":
+		func = colorWipeBackward
+	elif name == "pingpong":
+		func = pingPong
 	
 	return func 
 
@@ -158,3 +180,4 @@ threading.Thread(target=clock_leds).start()
 disco_leds.off()
 
 #brighten(True, 60)
+#pingPong(True)
