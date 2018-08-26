@@ -39,6 +39,7 @@ def solid(repeat):
 	if not repeat:
 		return CancelJob
 
+# ----
 def getFunc(name):
 	func = None
 	
@@ -62,14 +63,15 @@ def callback(client, userdata, message):
         payload = message.payload
         params = payload.split()
 
-	if params[0] == "end":
-		end = True
-		return
-
-	if len(params) < 7:
-		return
-	
 	try:
+
+		if params[0] == "end":
+			end = True
+			return
+
+		if params[0] == "cancel":
+			scheduler.clear(params[1])
+			return	
 
 		pre_effect = params[0]
 		pre_effect_duration = int(params[1])
