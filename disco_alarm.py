@@ -5,7 +5,7 @@ from schedule import CancelJob
 import threading
 from traceback import format_exc
 
-import disco_leds_test as disco_leds
+import disco_leds
 
 scheduler = SafeScheduler()
 

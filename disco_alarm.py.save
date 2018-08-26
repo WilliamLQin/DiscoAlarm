@@ -1,0 +1,120 @@
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+import time
+from safe_schedule import SafeScheduler
+from schedule import CancelJob
+import threading
+from traceback import format_exc
+
+import disco_leds_test as disco_leds
+
+scheduler = SafeScheduler()
+
+end = False
+
+endpoint = "a13a0acc0pv8gr.iot.us-east-1.amazonaws.com"
+rootCAPath = "root-CA.crt"
+privateKeyPath = "DiscoAlarm.private.key"
+certificatePath = "DiscoAlarm.cert.pem"
+clientID = "23"
+
+myAWSIoTMQTTClient = AWSIoTMQTTClient(clientID)
+myAWSIoTMQTTClient.configureEndpoint(endpoint, 8883)
+myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
+myAWSIoTMQTTClient.connect()
+
+def brighten(length, repeat):
+	disco_leds.brighten(length)
+	if not repeat:
+		return CancelJob
+
+def dim(length, repeat):
+	disco_leds.dim(length)
+	if not repeat:
+		return CancelJob
+
+def callback(client, userdata, message):
+	global end
+
+        print "Information received:"
+        print message.payload
+        print "From topic:"
+        print message.topic
+        
+        payload = message.payload
+        params = payload.split()
+
+	if params[0] == "end":
+		end = True
+		return
+
+	if len(params) < 7:
+		return
+	
+	try:
+
+		pre_effect = params[0]
+		pre_effect_duration = int(params[1])
+		post_effect = params[2]
+		name = params[3]
+		repeat = params[4]
+		post_effect_start = params[5]
+		days = []
+		for x in params[6:]:
+			days.append(x)
+
+		time = map(int, post_effect_start.split(":"))
+		time[1] -= int(pre_effect_duration/60)
+		if time[1] < 0:
+			time[0] -= 1
+			if time[0] < 0:
+				time[0] = 23
+			time[1] += 60
+		
+		pre_effect_start = str(time[0]) + ":" + str(time[1])
+
+		print pre_effect_start
+
+	except Exception:
+		print format_exc()
+		return
+	
+	print pre_effect
+	print pre_effect_duration
+	print post_effect
+	print name
+	print repeat
+	print post_effect_start
+	for x in days:
+		print x
+	
+#        if len(params) == 2:
+#                if params[0] == "brighten":
+#                        scheduler.every(1).seconds.do(leds_brighten, float(params[1]))
+#                elif params[0] == "dim":   
+#                        scheduler.every(1).seconds.do(leds_dim, float(params[1]))
+
+myAWSIoTMQTTClient.subscribe("disco_alarm", 0, callback)
+
+print "ready"
+
+def clock_scheduler():
+	global scheduler
+	global end
+
+	while not end:
+		scheduler.run_pending()
+		time.sleep(1)
+
+def clock_leds():
+	global end
+	
+	prev = time.time()
+
+	while not end:
+		elapsed = (time.time()-prev)*1000
+		prev = time.time()
+		disco_leds.clock(elapsed)
+		time.sleep(0.001)
+
+threading.Thread(target=clock_scheduler).start()
+threading.Thread(target=clock_leds).start()
