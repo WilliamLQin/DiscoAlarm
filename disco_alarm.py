@@ -15,25 +15,20 @@ endpoint = "a13a0acc0pv8gr.iot.us-east-1.amazonaws.com"
 rootCAPath = "/home/pi/DiscoAlarm/root-CA.crt"
 privateKeyPath = "/home/pi/DiscoAlarm/DiscoAlarm.private.key"
 certificatePath = "/home/pi/DiscoAlarm/DiscoAlarm.cert.pem"
-clientID = "23"
+clientID = "21"
 
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientID)
 myAWSIoTMQTTClient.configureEndpoint(endpoint, 8883)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
 myAWSIoTMQTTClient.connect()
 
-# Pre-Effects
+# Pre Effect
 def brighten(repeat, length):
 	disco_leds.brighten(length)
 	if not repeat:
 		return CancelJob
 
-def dim(repeat, length):
-	disco_leds.dim(length)
-	if not repeat:
-		return CancelJob
-
-# Post-Effects
+# Alarm Light Patterns
 def solid(repeat):
 	disco_leds.solid()
 	if not repeat:
@@ -54,16 +49,26 @@ def pingPong(repeat):
 	if not repeat:
 		return CancelJob
 
+def splashOut(repeat):
+	disco_leds.splashOut()
+	if not repeat:
+		return CancelJob
+
+def splashIn(repeat):
+	disco_leds.splashIn()
+	if not repeat:
+		return CancelJob
+
+def constellation(repeat):
+	disco_leds.constellation()
+	if not repeat:
+		return CancelJob
 
 # ----
 def getFunc(name):
 	func = None
 	
-	if name == "brighten":
-		func = brighten
-	elif name == "dim":
-		func = dim
-	elif name == "solid":
+	if name == "solid":
 		func = solid
 	elif name == "forward":
 		func = colorWipeForward
@@ -95,19 +100,11 @@ def callback(client, userdata, message):
 			disco_leds.off()
 			return
 
-		if params[0] == "cancel":
-			scheduler.clear(params[1])
-			return	
-
-		pre_effect = params[0]
-		pre_effect_duration = int(params[1]) * 60
-		post_effect = params[2]
-		name = params[3]
+		post_effect = params[0]
+		post_effect_start = params[1]
+		pre_effect_duration = int(params[2]) * 60
+		day = params[3]
 		repeat = params[4]
-		post_effect_start = params[5]
-		days = []
-		for x in params[6:]:
-			days.append(x)
 
 		time = map(int, post_effect_start.split(":"))
 		time[1] -= int(pre_effect_duration/60)
@@ -123,32 +120,32 @@ def callback(client, userdata, message):
 		print format_exc()
 		return
 
-	func_pre = getFunc(pre_effect)
+	func_pre = brighten
 	func_post = getFunc(post_effect)
 	
 	rep = True if repeat == "yes" else False
 
-	if "sunday" or "sundays" or "weekend" or "weekends" in days:
-		scheduler.every().sunday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().sunday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "monday" or "mondays" or  "weekday" or "weekdays" in days:
-		scheduler.every().monday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().monday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "tuesday" or "tuesdays" or "weekday" or "weekdays" in days:
-		scheduler.every().tuesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().tuesday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "wednesday" or "wednesdays" or "weekday" or "weekdays" in days:
-		scheduler.every().wednesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().wednesday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "thursday" or "thursdays" or "weekday" or "weekdays" in days:
-		scheduler.every().thursday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().thursday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "friday" or "fridays" or "weekday" or "weekdays" in days:
-		scheduler.every().friday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().friday.at(post_effect_start).do(func_post, rep).tag(name)		
-	if "saturday" or "saturdays" or "weekend" or "weekends" in days:
-		scheduler.every().saturday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration).tag(name)
-		scheduler.every().saturday.at(post_effect_start).do(func_post, rep).tag(name)		
+	if day in ["sunday", "sundays", "weekend", "weekends"]:
+		scheduler.every().sunday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().sunday.at(post_effect_start).do(func_post, rep)				
+	if day in ["monday", "mondays",  "weekday", "weekdays"]:
+		scheduler.every().monday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().monday.at(post_effect_start).do(func_post, rep)					
+	if day in ["tuesday", "tuesdays", "weekday", "weekdays"]:
+		scheduler.every().tuesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().tuesday.at(post_effect_start).do(func_post, rep)						
+	if day in ["wednesday", "wednesdays", "weekday", "weekdays"]:
+		scheduler.every().wednesday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().wednesday.at(post_effect_start).do(func_post, rep)					
+	if day in ["thursday", "thursdays", "weekday", "weekdays"]:
+		scheduler.every().thursday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().thursday.at(post_effect_start).do(func_post, rep)							
+	if day in ["friday", "fridays", "weekday", "weekdays"]:
+		scheduler.every().friday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().friday.at(post_effect_start).do(func_post, rep)					
+	if day in ["saturday", "saturdays", "weekend", "weekends"]:
+		scheduler.every().saturday.at(pre_effect_start).do(func_pre, rep, pre_effect_duration)
+		scheduler.every().saturday.at(post_effect_start).do(func_post, rep)	
 			
 myAWSIoTMQTTClient.subscribe("disco_alarm", 0, callback)
 myAWSIoTMQTTClient.publish("connected", True, 0)
